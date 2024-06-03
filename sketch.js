@@ -108,7 +108,7 @@ function checkPositions(x, y)
     for (let i = startCheckY; i <= endCheckY; i++) {
         for (let j = startCheckX; j <= endCheckX; j++) {
             console.log(i + " " + j);
-            if ((i != y || j != x) && posArray[i][j] != "obstacle") {
+            if (checkCell(j, i, y, x)) {
                 distances.push({
                     X: j, 
                     Y: i, 
@@ -119,6 +119,11 @@ function checkPositions(x, y)
     }
     
     return distances;
+}
+
+function checkCell(x1, y1, x2, y2)
+{
+    return ((y1 != y2 || x1 != x2) && posArray[y1][x1] != "obstacle");
 }
 
 function cellToEndPointDist(startX, startY)
