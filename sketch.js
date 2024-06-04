@@ -7,12 +7,22 @@ let end;
 let isPaintingPath = false;
 let isPaintingObstacle = false;
 
+let perimeter = [];
+let reachedMap = new Map();
+
+const createKey = (y, x) => `${y},${x}`;
+const removePosition = (y, x) => {
+    const key = createKey(y, x);
+    if (reachedMap.has(key)) {
+        reachedMap.delete(key);
+    }
+};
 
 function setup() {
     createCanvas(600, 600);
     buildArray(height/cellSize, width/cellSize);
     
-    start = {y: 2, x: 2};
+    start = {y: 8, x: 8};
     end = {y: 11, x: 2};
     
     posArray[0][0] = "obstacle";
@@ -32,9 +42,12 @@ function setup() {
 function draw() {
     drawGrid();
     drawOccupiedCells();
-    
-    let pathArray = calculatePath();
-    drawPath(pathArray);
+
+    calculatePath();
+    // Draw the path in blue
+    fillCellsFromArray(perimeter, "#8686D8");
+    reachedMap = new Map();
+    perimeter = [];
 }
 
 function mouseClicked()
@@ -48,80 +61,80 @@ function mouseClicked()
     } else if (isPaintingObstacle) {
         posArray[yStart][xStart] = "obstacle";
     } else {
-        setPosition(xStart, yStart, "start");
+        setStartPosition(xStart, yStart);
     }
 }
 
 function calculatePath()
 {
-    let distance = cellToEndPointDist(start.x, start.y);
-    let pathArray = [];
-    let checkedPositions = checkPositions(start.x, start.y);
+    // Check the cells above, below, left and right of the start position to begin
+    let currentCell = start;
 
-    let closestCell;
-    if (checkedPositions.length > 0) {    
-        closestCell = checkedPositions[0];
-        let count = 0;
-        //while (closestCell.distance.total > 0) {
-        while(count < 20) {
-            for (let i = 0; i < checkedPositions.length; i++) {
-                pathArray.push(checkedPositions[i]);
-                if (checkedPositions[i].distance.total < closestCell.distance.total)         {
-                closestCell = checkedPositions[i];
-                }
-                count++;
-            }
-            console.log("Current Closest Cell: " + closestCell.Y + " " + closestCell.X);
-            //pathArray.push(closestCell);
-            checkedPositions = checkPositions(closestCell.X, closestCell.Y);
-        }
-        console.log("Closest Neighbour Cell to End Point: " + closestCell.Y + ", " + closestCell.X);
-        return pathArray;
+    let count = 0;
+    let found = false;
+    perimeter.push(currentCell);
+    while(found == false)
+    { 
+        found = checkPositions(currentCell.x, currentCell.y);
+        console.log(found);
+        count++;
+        currentCell = perimeter[count];        
     }
 }
 
-function checkPositions(x, y)
+function checkPositions(posX, posY)
 {
-    // look up left, up, up right
-    // left, ignore center, right
-    // look down left, down, down right
-    
-    // to determine value of cell, look at the distance the cell is from the end point, in terms of x and y,
-    
-    // For example, if the starting position is at 0y, 4x and the ending position is at 11y, 2x, we subtract the xy values of the new cell from the ending position and add up the value to get a final value.
-    // for arguments sake, let's say the cell is at 1y, 4x
-    // (11y + 1y) + (2x + 4x) = 10 + 2 = 12
-    // and do the same for the cell at 1y, 3x
-    // (11y + 1y) + (2x + 3x) = 10 + 1 = 11
-    // The second cell is the better movement choice
-    // Starting from this cell, we do the same again
+    // let index = perimeter.findIndex(pos => 
+    //     pos.y == posY && pos.x == posX
+    // );
 
-    let startCheckX = x - 1 < 0 ? x : x - 1;
-    let endCheckX = x + 1 > posArray[0].length ? x : x + 1;
-    let startCheckY = y - 1 < 0 ? y : y - 1;
-    let endCheckY = y + 1 > posArray.length ? y : y + 1;
+    // if (index != -1)
+    // {
+    //     console.log("Removing: " + index);
+    //     perimeter.splice(index, 1);
+    // }
+
+    let startCheckX = posX - 1 < 0 ? posX : posX - 1;
+    let endCheckX   = posX + 1 >= posArray[0].length ? posX : posX + 1;
+    let startCheckY = posY - 1 < 0 ? posY : posY - 1;
+    let endCheckY   = posY + 1 >= posArray.length ? posY : posY + 1;
     
-    console.log("startCheckY: " + startCheckY + ", endCheckY: " + endCheckY + "\nstartCheckX: " + startCheckX + ", endCheckX: " + endCheckX);
-    
-    let distances = [];
+    //console.log("startCheckY: " + startCheckY + ", endCheckY: " + endCheckY + "\nstartCheckX: " + startCheckX + ", endCheckX: " + endCheckX);
     
     for (let i = startCheckY; i <= endCheckY; i++) {
-        for (let j = startCheckX; j <= endCheckX; j++) {
-            console.log(i + " " + j);
-            if (checkCell(j, i, y, x)) {
-                distances.push({
-                    X: j, 
-                    Y: i, 
-                    distance: cellToEndPointDist(j, i)
-                });
+
+        let posKey = createKey(i, posX);
+        if (checkCellForObstacle(posX, i, posX, posY) && 
+            posArray[i][posX] != posArray[start.y][start.x]) {
+            
+            if (posX == end.x && i == end.y)
+            {
+                return true;
             }
+            reachedMap.set(posKey);           
+            perimeter.push({y: i, x: posX});
         }
     }
-    
-    return distances;
+
+    for (let i = startCheckX; i <= endCheckX; i++) {
+        let posKey = createKey(i, posX);
+        if (checkCellForObstacle(i, posY, posX, posY) && 
+            posArray[posY][i] != posArray[start.y][start.x] ) {
+
+            if (i == end.x && posY == end.y)
+            {
+                return true;
+            }
+
+            reachedMap.set(posKey);  
+            perimeter.push({y: posY, x: i});
+        }
+    }
+
+    return false;
 }
 
-function checkCell(x1, y1, x2, y2)
+function checkCellForObstacle(x1, y1, x2, y2)
 {
     return ((y1 != y2 || x1 != x2) && posArray[y1][x1] != "obstacle");
 }
@@ -138,7 +151,7 @@ function cellToEndPointDist(startX, startY)
     return distance;
 }
 
-function setPosition(x, y, state)
+function setStartPosition(x, y)
 {
     clearPosition(start.x, start.y);
     start.x = x;
@@ -192,10 +205,10 @@ function drawOccupiedCells()
     }
 }
 
-function drawPath(pathArray)
+function fillCellsFromArray(cellArray, hexColor)
 {
-    for (let i = 0; i < pathArray.length - 1; i++) {
-        fillCell(pathArray[i].X, pathArray[i].Y, "#8686D8");
+    for (let i = 0; i < cellArray.length; i++) {
+        fillCell(cellArray[i].x, cellArray[i].y, hexColor);
     }
 }
 
