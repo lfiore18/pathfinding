@@ -9,6 +9,7 @@ let isPaintingObstacle = false;
 let isPaintingReached = false;
 
 let perimeter = [];
+let reached = [];
 let reachedMap = new Map();
 
 let boardHeight;
@@ -38,21 +39,27 @@ function setup() {
 }
 
 function draw() {
+    
+    // Draw the grid and any obstacles
     drawGrid();
     drawOccupiedCells();
 
-    calculatePath(100);
+    calculatePath(4);
 
+    // Draw reached nodes in tan orange
+    fillCellsFromArray(reached, "#a37d2c");
+    
     // Draw the path in blue
     fillCellsFromArray(perimeter, "#8686D8");
 
-    const paintCell = (e) => { e.x != "None" && e.y != "None" ? fillCell(e.x, e.y, "#a37d2c") : console.log(e); };
+    // Overlay the start and end cells
+    fillCell(start.x, start.y, "#008000");
+    fillCell(end.x, end.y, "#FF0000");
 
-    reachedMap.forEach(console.log);
-    reachedMap.forEach(paintCell);
+    // Empty the arrays
     reachedMap = new Map();
     perimeter = [];
-    fillCell(start.x, start.y, "#008000");
+    reached = [];
 }
 
 
@@ -65,44 +72,18 @@ function calculatePath(endAtCount)
     let foundGoal = false;
 
     let count = 0;
-    //while(perimeter.length > 0 && !foundGoal)
-    while(count < endAtCount)
+    while(perimeter.length > 0 && !foundGoal)
+    //while(count < endAtCount)
     {
+        // Remove the current perimeter node
         let current = perimeter.shift();
         
-        // Remove the current perimeter node
-        
-
         foundGoal = checkNeighbours(current);
         count++;
     }
 
     console.log(perimeter)
     console.log("found goal: " + foundGoal);
-    // Breadth-first:
-    // For the purposes of this exercise, assume the starting cell is not the goal
-    // Start from Cell(2, 3) 
-        // CheckNeighbours(2, 3)
-            // CheckCell(1, 3),(3, 3)(2, 2)(2, 4)                
-                // is in "reached" list
-                    // end CheckCell
-                // has the same x, y as goal's x, y
-                    // end CheckCell
-                // has the same x, y as start's x, y
-                    // end CheckCell 
-                // else
-                    // is occupied by an obstacle?
-                        // add to "reached"
-                        // end CheckCell
-                    // else
-                        // add to "perimeter"
-                        // add to "reached"
-                        // end CheckCell
-                    
-    
-
-        // If (checked)
-            // 
 }
 
 function checkNeighbours(cell)
@@ -135,7 +116,8 @@ function checkNeighbours(cell)
             let newPosition = newPos(y, posX);
             if (neighbourNotInReached(newPosition)) {              
                 perimeter.push(newPosition);
-                reachedMap.set(createKey(newPosition.y, newPosition.x), {y: posY, x: posX})
+                reachedMap.set(createKey(newPosition.y, newPosition.x), {y: posY, x: posX});
+                reached.push({y: y, x: posX});
             }
 
         }
@@ -150,6 +132,7 @@ function checkNeighbours(cell)
             if (neighbourNotInReached(newPosition)) {                
                 perimeter.push(newPosition);
                 reachedMap.set(createKey(newPosition.y, newPosition.x), {y: posY, x: posX});
+                reached.push({y: posY, x: x});
             }
 
         }
@@ -180,9 +163,16 @@ function cellHasObstacle(y, x)
 //     return ((y1 != y2 || x1 != x2) && posArray[y1][x1] != "obstacle");
 // }
 
+function reverseKey(key) {
+    let coords = key.split(',').map(Number);
+    return { x: coords[0], y: coords[1] };
+  }
+
 function createKey(y, x){
     return `${y},${x}`;
 } 
+
+
 function removePosition(y, x){
     const key = createKey(y, x);
     
