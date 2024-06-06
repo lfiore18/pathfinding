@@ -16,11 +16,12 @@ let boardHeight;
 let boardWidth;
 
 function setup() {
-    createCanvas(600, 600);
+    createCanvas(800, 800);
     boardHeight = height/cellSize;
     boardWidth = width/cellSize;
     buildArray(boardHeight, boardWidth);
     
+    // Specify start and end (goal) co-ordinates
     start = {y: 2, x: 3};
     end = {y: 11, x: 2};
     
@@ -44,13 +45,19 @@ function draw() {
     drawGrid();
     drawOccupiedCells();
 
-    calculatePath(4);
+    search(4);
+
+    //console.log(reachedMap);
+    let path = tracePath();
+    console.log(path);
 
     // Draw reached nodes in tan orange
     fillCellsFromArray(reached, "#a37d2c");
     
     // Draw the path in blue
     fillCellsFromArray(perimeter, "#8686D8");
+
+    fillCellsFromArray(path, "#5fb7b7");
 
     // Overlay the start and end cells
     fillCell(start.x, start.y, "#008000");
@@ -60,11 +67,37 @@ function draw() {
     reachedMap = new Map();
     perimeter = [];
     reached = [];
+    path = [];
 }
 
+function tracePath() 
+{
+    // Follow the trail of breadcrumbs back to the starting position
+    let path = [];
 
+    // Find the target cell in reachedMap
+    let lastCellKey = createKey(end.y, end.x);
 
-function calculatePath(endAtCount)
+    // Get the end cell
+    let lastCell = reachedMap.get(lastCellKey);
+    
+    path.push(lastCell);
+    if (lastCell != null)
+    {       
+        while (lastCell.y != "None" && 
+               lastCell.x != "None")
+        {
+            lastCellKey = createKey(lastCell.y, lastCell.x);
+            lastCell = reachedMap.get(lastCellKey);
+
+            path.push(lastCell);    
+        }
+    }
+
+    return path;
+}
+
+function search(endAtCount)
 {
     perimeter.push(start);
     reachedMap.set(createKey(start.y, start.x), {y: "None", x: "None"});
@@ -82,21 +115,21 @@ function calculatePath(endAtCount)
         count++;
     }
 
-    console.log(perimeter)
+    //console.log(perimeter)
     console.log("found goal: " + foundGoal);
 }
 
 function checkNeighbours(cell)
 {
-
     let posX = cell.x;
     let posY = cell.y;
 
-    console.log("posX: " + posX + " endX: " + end.x + " posY: " + posY + " endY: " + end.y);
-    if (posX == end.x && posY == end.y)
-    {
-        return true;
-    }
+    //console.log("posX: " + posX + " endX: " + end.x + " posY: " + posY + " endY: " + end.y);
+    // if (posX == end.x && posY == end.y)
+    // {
+    //     reachedMap.set(createKey(posX, posY), {y: posY, x: posX});
+    //     return true;
+    // }
 
     
 
@@ -118,6 +151,12 @@ function checkNeighbours(cell)
                 perimeter.push(newPosition);
                 reachedMap.set(createKey(newPosition.y, newPosition.x), {y: posY, x: posX});
                 reached.push({y: y, x: posX});
+
+            }
+
+            if (newPosition.y == end.y && newPosition.x == end.x)
+            {
+                return true;
             }
 
         }
@@ -135,6 +174,10 @@ function checkNeighbours(cell)
                 reached.push({y: posY, x: x});
             }
 
+            if (newPosition.y == end.y && newPosition.x == end.x)
+            {
+                return true;
+            }
         }
 
     }
@@ -158,20 +201,9 @@ function cellHasObstacle(y, x)
     return posArray[y][x] == "obstacle";
 }
 
-// function checkCellForObstacle(x1, y1, x2, y2)
-// {
-//     return ((y1 != y2 || x1 != x2) && posArray[y1][x1] != "obstacle");
-// }
-
-function reverseKey(key) {
-    let coords = key.split(',').map(Number);
-    return { x: coords[0], y: coords[1] };
-  }
-
 function createKey(y, x){
     return `${y},${x}`;
 } 
-
 
 function removePosition(y, x){
     const key = createKey(y, x);
@@ -276,15 +308,13 @@ function buildArray(rows, columns)
         }
     }
     
-    console.log("height: " + posArray.length + " width: " + posArray[0].length);
+    //console.log("height: " + posArray.length + " width: " + posArray[0].length);
 }
 
 function mouseClicked()
 {
     let xStart = floor(mouseX/cellSize);
     let yStart = floor(mouseY/cellSize);
-
-
 
     let mouseClickInBounds = (xStart < boardWidth && xStart >= 0) && (yStart < boardHeight && yStart >= 0);
 
