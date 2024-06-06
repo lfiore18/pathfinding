@@ -6,23 +6,21 @@ let end;
 
 let isPaintingPath = false;
 let isPaintingObstacle = false;
+let isPaintingReached = false;
 
 let perimeter = [];
 let reachedMap = new Map();
 
-const createKey = (y, x) => `${y},${x}`;
-const removePosition = (y, x) => {
-    const key = createKey(y, x);
-    if (reachedMap.has(key)) {
-        reachedMap.delete(key);
-    }
-};
+let boardHeight;
+let boardWidth;
 
 function setup() {
     createCanvas(600, 600);
-    buildArray(height/cellSize, width/cellSize);
+    boardHeight = height/cellSize;
+    boardWidth = width/cellSize;
+    buildArray(boardHeight, boardWidth);
     
-    start = {y: 8, x: 8};
+    start = {y: 2, x: 3};
     end = {y: 11, x: 2};
     
     posArray[0][0] = "obstacle";
@@ -43,57 +41,85 @@ function draw() {
     drawGrid();
     drawOccupiedCells();
 
-    calculatePath();
+    calculatePath(100);
+
     // Draw the path in blue
     fillCellsFromArray(perimeter, "#8686D8");
+
+    const paintCell = (e) => { e.x != "None" && e.y != "None" ? fillCell(e.x, e.y, "#a37d2c") : console.log(e); };
+
+    reachedMap.forEach(console.log);
+    reachedMap.forEach(paintCell);
     reachedMap = new Map();
     perimeter = [];
+    fillCell(start.x, start.y, "#008000");
 }
 
-function mouseClicked()
-{
-    let xStart = floor(mouseX/cellSize);
-    let yStart = floor(mouseY/cellSize);
-    console.log("y: " + yStart + ", x: " + xStart);
 
-    if (isPaintingPath) {
-        posArray[yStart][xStart] = "path";
-    } else if (isPaintingObstacle) {
-        posArray[yStart][xStart] = "obstacle";
-    } else {
-        setStartPosition(xStart, yStart);
-    }
-}
 
-function calculatePath()
+function calculatePath(endAtCount)
 {
-    // Check the cells above, below, left and right of the start position to begin
-    let currentCell = start;
+    perimeter.push(start);
+    reachedMap.set(createKey(start.y, start.x), {y: "None", x: "None"});
+
+    let foundGoal = false;
 
     let count = 0;
-    let found = false;
-    perimeter.push(currentCell);
-    while(found == false)
-    { 
-        found = checkPositions(currentCell.x, currentCell.y);
-        console.log(found);
+    //while(perimeter.length > 0 && !foundGoal)
+    while(count < endAtCount)
+    {
+        let current = perimeter.shift();
+        
+        // Remove the current perimeter node
+        
+
+        foundGoal = checkNeighbours(current);
         count++;
-        currentCell = perimeter[count];        
     }
+
+    console.log(perimeter)
+    console.log("found goal: " + foundGoal);
+    // Breadth-first:
+    // For the purposes of this exercise, assume the starting cell is not the goal
+    // Start from Cell(2, 3) 
+        // CheckNeighbours(2, 3)
+            // CheckCell(1, 3),(3, 3)(2, 2)(2, 4)                
+                // is in "reached" list
+                    // end CheckCell
+                // has the same x, y as goal's x, y
+                    // end CheckCell
+                // has the same x, y as start's x, y
+                    // end CheckCell 
+                // else
+                    // is occupied by an obstacle?
+                        // add to "reached"
+                        // end CheckCell
+                    // else
+                        // add to "perimeter"
+                        // add to "reached"
+                        // end CheckCell
+                    
+    
+
+        // If (checked)
+            // 
 }
 
-function checkPositions(posX, posY)
+function checkNeighbours(cell)
 {
-    // let index = perimeter.findIndex(pos => 
-    //     pos.y == posY && pos.x == posX
-    // );
 
-    // if (index != -1)
-    // {
-    //     console.log("Removing: " + index);
-    //     perimeter.splice(index, 1);
-    // }
+    let posX = cell.x;
+    let posY = cell.y;
 
+    console.log("posX: " + posX + " endX: " + end.x + " posY: " + posY + " endY: " + end.y);
+    if (posX == end.x && posY == end.y)
+    {
+        return true;
+    }
+
+    
+
+    // if the position is 0, subtracting from it will make it less than 0, so 
     let startCheckX = posX - 1 < 0 ? posX : posX - 1;
     let endCheckX   = posX + 1 >= posArray[0].length ? posX : posX + 1;
     let startCheckY = posY - 1 < 0 ? posY : posY - 1;
@@ -101,43 +127,70 @@ function checkPositions(posX, posY)
     
     //console.log("startCheckY: " + startCheckY + ", endCheckY: " + endCheckY + "\nstartCheckX: " + startCheckX + ", endCheckX: " + endCheckX);
     
-    for (let i = startCheckY; i <= endCheckY; i++) {
-
-        let posKey = createKey(i, posX);
-        if (checkCellForObstacle(posX, i, posX, posY) && 
-            posArray[i][posX] != posArray[start.y][start.x]) {
+    //reachedMap.set(createKey)
+    for (let y = startCheckY; y <= endCheckY; y++) {
+        
+        if (y != cell.y && !cellHasObstacle(y, posX)) {
             
-            if (posX == end.x && i == end.y)
-            {
-                return true;
+            let newPosition = newPos(y, posX);
+            if (neighbourNotInReached(newPosition)) {              
+                perimeter.push(newPosition);
+                reachedMap.set(createKey(newPosition.y, newPosition.x), {y: posY, x: posX})
             }
-            reachedMap.set(posKey);           
-            perimeter.push({y: i, x: posX});
+
         }
+
     }
 
-    for (let i = startCheckX; i <= endCheckX; i++) {
-        let posKey = createKey(i, posX);
-        if (checkCellForObstacle(i, posY, posX, posY) && 
-            posArray[posY][i] != posArray[start.y][start.x] ) {
+    for (let x = startCheckX; x <= endCheckX; x++) {
 
-            if (i == end.x && posY == end.y)
-            {
-                return true;
+        if (x != cell.x && !cellHasObstacle(posY, x)) {
+            
+            let newPosition = newPos(posY, x);
+            if (neighbourNotInReached(newPosition)) {                
+                perimeter.push(newPosition);
+                reachedMap.set(createKey(newPosition.y, newPosition.x), {y: posY, x: posX});
             }
 
-            reachedMap.set(posKey);  
-            perimeter.push({y: posY, x: i});
         }
+
     }
 
     return false;
 }
 
-function checkCellForObstacle(x1, y1, x2, y2)
+function newPos(newY, newX)
 {
-    return ((y1 != y2 || x1 != x2) && posArray[y1][x1] != "obstacle");
+    return {y: newY, x: newX};
 }
+
+function neighbourNotInReached(pos)
+{
+    let key = createKey(pos.y, pos.x);
+    return !reachedMap.has(key);
+}
+
+function cellHasObstacle(y, x)
+{
+    return posArray[y][x] == "obstacle";
+}
+
+// function checkCellForObstacle(x1, y1, x2, y2)
+// {
+//     return ((y1 != y2 || x1 != x2) && posArray[y1][x1] != "obstacle");
+// }
+
+function createKey(y, x){
+    return `${y},${x}`;
+} 
+function removePosition(y, x){
+    const key = createKey(y, x);
+    
+    if (reachedMap.has(key)) {
+        reachedMap.delete(key);
+    }
+}
+
 
 function cellToEndPointDist(startX, startY)
 {
@@ -201,6 +254,10 @@ function drawOccupiedCells()
             if(posArray[y][x] == "obstacle") {
                 fillCell(x, y, "#808080");
             }
+
+            if(posArray[y][x] == "reached") {
+                fillCell(x, y, "#ffb600")
+            }
         }
     }
 }
@@ -232,17 +289,50 @@ function buildArray(rows, columns)
     console.log("height: " + posArray.length + " width: " + posArray[0].length);
 }
 
+function mouseClicked()
+{
+    let xStart = floor(mouseX/cellSize);
+    let yStart = floor(mouseY/cellSize);
 
 
-function keyPressed() { 
+
+    let mouseClickInBounds = (xStart < boardWidth && xStart >= 0) && (yStart < boardHeight && yStart >= 0);
+
+    if (mouseClickInBounds){
+        console.log("y: " + yStart + ", x: " + xStart);
+        if (isPaintingPath) {
+            posArray[yStart][xStart] = "path";
+        } else if (isPaintingObstacle) {
+            posArray[yStart][xStart] = "obstacle";
+        } else if (isPaintingReached) {
+            posArray[yStart][xStart] = "reached";
+        } else {
+            setStartPosition(xStart, yStart);
+        }
+    }
+}
+
+function keyPressed() {
+    // Bitfield
+    // 'c' is 0 
     if (key === 'c') {
         isPaintingPath = !isPaintingPath;
         isPaintingObstacle = false;
+        isPaintingReached = false;
         console.log("Currently Painting Path: " + isPaintingPath);
     }
+
     if (key === 'o') {
         isPaintingObstacle = !isPaintingObstacle;
         isPaintingPath = false;
+        isPaintingReached = false;
         console.log("Currently Painting Path: " + isPaintingObstacle);
+    }
+
+    if (key === 'r') {
+        isPaintingReached = !isPaintingReached;
+        isPaintingPath = false;
+        isPaintingObstacle = false;
+        console.log("Currently Painting Path: " + isPaintingReached);
     }
 }
