@@ -182,39 +182,8 @@ function checkNeighbours(cell)
 
     }
 
-    //return false;
-
-    if (processNeighbouringCells(startCheckY, endCheckY, posX, false, cell)) {
-        return true;
-    }
-
-    if (processNeighbouringCells(startCheckX, endCheckX, posY, true, cell)) {
-        return true;
-    }
-}
-
-function processNeighbouringCells(start, end, pos, isXAxis, cell) {
-    for (let i = start; i <= end; i++) {
-        let x = isXAxis ? i : pos;
-        let y = isXAxis ? pos : i;
-
-        if ((isXAxis ? x : y) != (isXAxis ? cell.x : cell.y) && !cellHasObstacle(y, x)) {
-            let newPosition = newPos(y, x);
-            if (neighbourNotInReached(newPosition)) {
-                perimeter.push(newPosition);
-                reachedMap.set(createKey(newPosition.y, newPosition.x), { y: cell.y, x: cell.x });
-                reached.push({ y: y, x: x });
-            }
-
-            if (newPosition.y == end.y && newPosition.x == end.x) {
-                return true;
-            }
-        }
-    }
     return false;
 }
-
-
 
 function newPos(newY, newX)
 {
