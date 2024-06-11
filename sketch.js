@@ -10,7 +10,9 @@ let isPaintingReached = false;
 
 let perimeter = [];
 let reached = [];
+
 let reachedMap = new Map();
+let costMap = new Map();
 
 let boardHeight;
 let boardWidth;
@@ -70,12 +72,21 @@ function draw() {
     fillCell(start.x, start.y, "#008000");
     fillCell(end.x, end.y, "#FF0000");
 
+    PriorityQueueTest(2, 3);
+
     // Empty the arrays
     reachedMap = new Map();
     perimeter = [];
     reached = [];
     path = [];
 }
+
+function PriorityQueueTest(y, x)
+{
+    costMap.set(createKey(y, x), {cost: 2});
+    
+}
+
 
 function tracePath() 
 {
@@ -145,8 +156,7 @@ function checkNeighbours(cell)
                 reached.push({y: y, x: posX});
             }
 
-            if (newPosition.y == end.y && newPosition.x == end.x)
-            {
+            if (newPosition.y == end.y && newPosition.x == end.x) {
                 return true;
             }
         }
@@ -172,8 +182,39 @@ function checkNeighbours(cell)
 
     }
 
+    //return false;
+
+    if (processNeighbouringCells(startCheckY, endCheckY, posX, false, cell)) {
+        return true;
+    }
+
+    if (processNeighbouringCells(startCheckX, endCheckX, posY, true, cell)) {
+        return true;
+    }
+}
+
+function processNeighbouringCells(start, end, pos, isXAxis, cell) {
+    for (let i = start; i <= end; i++) {
+        let x = isXAxis ? i : pos;
+        let y = isXAxis ? pos : i;
+
+        if ((isXAxis ? x : y) != (isXAxis ? cell.x : cell.y) && !cellHasObstacle(y, x)) {
+            let newPosition = newPos(y, x);
+            if (neighbourNotInReached(newPosition)) {
+                perimeter.push(newPosition);
+                reachedMap.set(createKey(newPosition.y, newPosition.x), { y: cell.y, x: cell.x });
+                reached.push({ y: y, x: x });
+            }
+
+            if (newPosition.y == end.y && newPosition.x == end.x) {
+                return true;
+            }
+        }
+    }
     return false;
 }
+
+
 
 function newPos(newY, newX)
 {
@@ -360,7 +401,7 @@ function mouseClicked()
         if (isPaintingPath) {
             posArray[yStart][xStart].type = "path";
         } else if (isPaintingObstacle) {
-            posArray[yStart][xStart].type = "obstacle";
+            posArray[yStart][xStart] = {type: "obstacle", cost: "n/a"}
         } else if (isPaintingReached) {
             posArray[yStart][xStart].type = "reached";
         } else {
