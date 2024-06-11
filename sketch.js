@@ -25,18 +25,25 @@ function setup() {
     start = {y: 2, x: 3};
     end = {y: 11, x: 2};
     
-    posArray[0][0] = "obstacle";
-    posArray[0][1] = "obstacle";
-    posArray[0][2] = "obstacle";
-    posArray[0][3] = "obstacle";
+    posArray[0][0] = {type: "obstacle", cost: "n/a"};
+    posArray[0][1] = {type: "obstacle", cost: "n/a"};
+    posArray[0][2] = {type: "obstacle", cost: "n/a"};
+    posArray[0][3] = {type: "obstacle", cost: "n/a"};
     
-    posArray[4][0] = "obstacle";
-    posArray[4][1] = "obstacle";
-    posArray[4][2] = "obstacle";
-    posArray[4][3] = "obstacle";
+    posArray[4][0] = {type: "obstacle", cost: "n/a"};
+    posArray[4][1] = {type: "obstacle", cost: "n/a"};
+    posArray[4][2] = {type: "obstacle", cost: "n/a"};
+    posArray[4][3] = {type: "obstacle", cost: "n/a"};
     
-    posArray[start.y][start.x] = "start";
-    posArray[end.y][end.x] = "end";
+
+    posArray[5][3] = {type: "empty", cost: 3};
+    posArray[5][4] = {type: "empty", cost: 4};
+    posArray[6][5] = {type: "empty", cost: 3};
+    posArray[5][6] = {type: "empty", cost: 5};
+    
+
+    posArray[start.y][start.x] = {type: "start", cost: 0};
+    posArray[end.y][end.x] = {type: "start", cost: 0};
 }
 
 function draw() {
@@ -51,13 +58,13 @@ function draw() {
     console.log(path);
 
     // Draw reached nodes in tan orange
-    fillCellsFromArray(reached, "#a37d2c");
+    fillCellsFromArray(reached, "#A37D2C");
     
     // Draw the search perimeter in blue
     fillCellsFromArray(perimeter, "#8686D8");
 
     // Draw the calculated path in cyan
-    fillCellsFromArray(path, "#5fb7b7");
+    fillCellsFromArray(path, "#5FB7B7");
 
     // Overlay the start and end cells
     fillCell(start.x, start.y, "#008000");
@@ -136,7 +143,6 @@ function checkNeighbours(cell)
                 perimeter.push(newPosition);
                 reachedMap.set(createKey(newPosition.y, newPosition.x), {y: posY, x: posX});
                 reached.push({y: y, x: posX});
-
             }
 
             if (newPosition.y == end.y && newPosition.x == end.x)
@@ -182,21 +188,22 @@ function neighbourNotInReached(pos)
 
 function cellHasObstacle(y, x)
 {
-    return posArray[y][x] == "obstacle";
+    return posArray[y][x].type == "obstacle";
 }
 
-function createKey(y, x){
+function createKey(y, x)
+{
     return `${y},${x}`;
 } 
 
-function removePosition(y, x){
+function removePosition(y, x)
+{
     const key = createKey(y, x);
     
     if (reachedMap.has(key)) {
         reachedMap.delete(key);
     }
 }
-
 
 function cellToEndPointDist(startX, startY)
 {
@@ -215,12 +222,13 @@ function setStartPosition(x, y)
     clearPosition(start.x, start.y);
     start.x = x;
     start.y = y;
-    posArray[y][x] = "start";
+    posArray[y][x].type = "start";
+    posArray[y][x].cost = 0;
 }
 
 function clearPosition(x, y)
 {
-    posArray[y][x] = "empty";
+    posArray[y][x].type = "empty";
 }
 
 function drawGrid()
@@ -237,31 +245,31 @@ function drawOccupiedCells()
 {
     for (let y = 0; y < posArray.length; y++) {
         for (let x = 0; x < posArray[y].length; x++) {      
-            if(posArray[y][x] == "filled") {
+            if(posArray[y][x].type == "filled") {
                 fillCell(x, y, "#FF");
             }
             
-            if(posArray[y][x] == "start") {
+            if(posArray[y][x].type == "start") {
                 fillCell(x, y, "#008000");
             }
             
-            if(posArray[y][x] == "end") {
+            if(posArray[y][x].type == "end") {
                 fillCell(x, y, "#FF0000");
             }
             
-            if(posArray[y][x] == "empty") {
+            if(posArray[y][x].type == "empty") {
                 fillCell(x, y, "#000000");
             }
             
-            if(posArray[y][x] == "path") {
+            if(posArray[y][x].type == "path") {
                 fillCell(x, y, "#8686D8");
             }
             
-            if(posArray[y][x] == "obstacle") {
+            if(posArray[y][x].type == "obstacle") {
                 fillCell(x, y, "#808080");
             }
 
-            if(posArray[y][x] == "reached") {
+            if(posArray[y][x].type == "reached") {
                 fillCell(x, y, "#ffb600");
             }
         }
@@ -277,7 +285,7 @@ function fillCellsFromArray(cellArray, hexColor)
 
 function fillCell(x, y, hexColor)
 {
-    let posVal = Math.abs(start.x - x) + Math.abs(start.y - y);
+    let posVal = calculateMovementCost(y, x);
 
     // Fill the cell
     fill(hexColor);
@@ -287,6 +295,25 @@ function fillCell(x, y, hexColor)
     fill("white");
     textAlign(CENTER, CENTER); // Center the text
     text("" + posVal + "", (cellSize * x) + cellSize / 2, (cellSize * y) + cellSize / 2);
+}
+
+function calculateMovementCost(y, x)
+{
+    if (y == "None" && x == "None")
+    {
+        return 0;
+    }
+
+    let posVal = Math.abs(start.x - x) + Math.abs(start.y - y);
+    
+    if (posArray[y][x].cost != "n/a")
+    {
+        posVal += posArray[y][x].cost;
+    } else {
+        posVal = "n/a";
+    }
+
+    return posVal;
 }
 
 function drawTextOverlay(str, hexColor, textSize)
@@ -306,7 +333,15 @@ function buildArray(rows, columns)
         posArray[row] = new Array(columns);
         
         for(let cell = 0; cell < columns; cell++) {
-            posArray[row][cell] = "empty";    
+            // NOTE: This is where we assign movement cost
+
+            if (cell > 6 && cell < 9 || row < 6 && row > 9)
+            {
+                posArray[row][cell] = {type: "empty", cost: Math.round(Math.random() * 5)};
+            } else 
+            {
+                posArray[row][cell] = {type: "empty", cost: 0};
+            }
         }
     }
     
@@ -323,11 +358,11 @@ function mouseClicked()
     if (mouseClickInBounds){
         console.log("y: " + yStart + ", x: " + xStart);
         if (isPaintingPath) {
-            posArray[yStart][xStart] = "path";
+            posArray[yStart][xStart].type = "path";
         } else if (isPaintingObstacle) {
-            posArray[yStart][xStart] = "obstacle";
+            posArray[yStart][xStart].type = "obstacle";
         } else if (isPaintingReached) {
-            posArray[yStart][xStart] = "reached";
+            posArray[yStart][xStart].type = "reached";
         } else {
             setStartPosition(xStart, yStart);
         }
