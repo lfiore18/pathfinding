@@ -62,6 +62,7 @@ function draw() {
     // Overlay the start and end cells
     fillCell(start.x, start.y, "#008000");
     fillCell(end.x, end.y, "#FF0000");
+    fillCell(end.x -1, end.y -1, "#5fb7b7")
 
     // Empty the arrays
     reachedMap = new Map();
@@ -85,7 +86,7 @@ function tracePath()
     if (lastCell != null)
     {       
         while (lastCell.y != "None" && 
-               lastCell.x != "None")
+                lastCell.x != "None")
         {
             lastCellKey = createKey(lastCell.y, lastCell.x);
             lastCell = reachedMap.get(lastCellKey);
@@ -114,9 +115,6 @@ function search(endAtCount)
         foundGoal = checkNeighbours(current);
         count++;
     }
-
-    //console.log(perimeter)
-    console.log("found goal: " + foundGoal);
 }
 
 function checkNeighbours(cell)
@@ -124,24 +122,12 @@ function checkNeighbours(cell)
     let posX = cell.x;
     let posY = cell.y;
 
-    //console.log("posX: " + posX + " endX: " + end.x + " posY: " + posY + " endY: " + end.y);
-    // if (posX == end.x && posY == end.y)
-    // {
-    //     reachedMap.set(createKey(posX, posY), {y: posY, x: posX});
-    //     return true;
-    // }
-
-    
-
     // if the position is 0, subtracting from it will make it less than 0, so 
     let startCheckX = posX - 1 < 0 ? posX : posX - 1;
     let endCheckX   = posX + 1 >= posArray[0].length ? posX : posX + 1;
     let startCheckY = posY - 1 < 0 ? posY : posY - 1;
     let endCheckY   = posY + 1 >= posArray.length ? posY : posY + 1;
     
-    //console.log("startCheckY: " + startCheckY + ", endCheckY: " + endCheckY + "\nstartCheckX: " + startCheckX + ", endCheckX: " + endCheckX);
-    
-    //reachedMap.set(createKey)
     for (let y = startCheckY; y <= endCheckY; y++) {
         
         if (y != cell.y && !cellHasObstacle(y, posX)) {
@@ -158,7 +144,6 @@ function checkNeighbours(cell)
             {
                 return true;
             }
-
         }
 
     }
@@ -278,7 +263,7 @@ function drawOccupiedCells()
             }
 
             if(posArray[y][x] == "reached") {
-                fillCell(x, y, "#ffb600")
+                fillCell(x, y, "#ffb600");
             }
         }
     }
@@ -293,9 +278,18 @@ function fillCellsFromArray(cellArray, hexColor)
 
 function fillCell(x, y, hexColor)
 {
+    let posVal = Math.abs(start.x - x) + Math.abs(start.y - y);
+
+    // Fill the cell
     fill(hexColor);
     square(x * cellSize, y * cellSize, cellSize);
+
+    textSize(18);
+    fill("white");
+    textAlign(CENTER, CENTER); // Center the text
+    text("" + posVal + "", (cellSize * x) + cellSize / 2, (cellSize * y) + cellSize / 2);
 }
+
 
 function buildArray(rows, columns)
 { 
