@@ -46,23 +46,22 @@ function draw() {
     drawOccupiedCells();
 
     search(4);
-
-    //console.log(reachedMap);
+    
     let path = tracePath();
     console.log(path);
 
     // Draw reached nodes in tan orange
     fillCellsFromArray(reached, "#a37d2c");
     
-    // Draw the path in blue
+    // Draw the search perimeter in blue
     fillCellsFromArray(perimeter, "#8686D8");
 
+    // Draw the calculated path in cyan
     fillCellsFromArray(path, "#5fb7b7");
 
     // Overlay the start and end cells
     fillCell(start.x, start.y, "#008000");
     fillCell(end.x, end.y, "#FF0000");
-    fillCell(end.x -1, end.y -1, "#5fb7b7")
 
     // Empty the arrays
     reachedMap = new Map();
@@ -290,6 +289,15 @@ function fillCell(x, y, hexColor)
     text("" + posVal + "", (cellSize * x) + cellSize / 2, (cellSize * y) + cellSize / 2);
 }
 
+function drawTextOverlay(str, hexColor, textSize)
+{
+    textSize(textSize);
+    fill(hexColor);
+    textAlign(CENTER, CENTER); // Center the text
+
+    let halfCellSize = cellSize / 2;
+    text("" + str + "", (cellSize * x) + halfCellSize, (cellSize * y) + halfCellSize);
+}
 
 function buildArray(rows, columns)
 { 
