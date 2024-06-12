@@ -8,10 +8,10 @@ let isPaintingPath = false;
 let isPaintingObstacle = false;
 let isPaintingReached = false;
 
-let perimeter = [];
+let perimeterPQueue;
 let reached = [];
 
-let reachedMap = new Map();
+let cameFrom = new Map();
 let costMap = new Map();
 
 let boardHeight;
@@ -59,23 +59,25 @@ function draw() {
     let path = tracePath();
     console.log(path);
 
+    PriorityQueueTest(2, 3);
+
     // Draw reached nodes in tan orange
     fillCellsFromArray(reached, "#A37D2C");
     
     // Draw the search perimeter in blue
-    fillCellsFromArray(perimeter, "#8686D8");
+    //fillCellsFromArray(perimeter, "#8686D8");
 
     // Draw the calculated path in cyan
-    fillCellsFromArray(path, "#5FB7B7");
+    //fillCellsFromArray(path, "#5FB7B7");
 
     // Overlay the start and end cells
     fillCell(start.x, start.y, "#008000");
     fillCell(end.x, end.y, "#FF0000");
 
-    PriorityQueueTest(2, 3);
+    
 
     // Empty the arrays
-    reachedMap = new Map();
+    cameFrom = new Map();
     perimeter = [];
     reached = [];
     path = [];
@@ -83,8 +85,20 @@ function draw() {
 
 function PriorityQueueTest(y, x)
 {
-    costMap.set(createKey(y, x), {cost: 2});
+    costMap.set(createKey(y, x), 2);
+    // var pq = newNode(4, 1);
+    // pq = push(pq, 5, 2);
+    // pq = push(pq, 6, 3);
+    // pq = push(pq, 7, 0);
+
+    let priorityQueue = newNode({y: y, x: x}, 2);
     
+    priorityQueue = pqPush(priorityQueue, {y: 3, x: 4}, 0);
+    
+    priorityQueue = pqPush(priorityQueue, {y: 3, x: 8}, 1);
+    priorityQueue = pqPush(priorityQueue, {y: 3, x: 1}, 0);
+
+    console.log(priorityQueue);
 }
 
 
@@ -93,11 +107,11 @@ function tracePath()
     // Follow the trail of breadcrumbs back to the starting position
     let path = [];
 
-    // Find the target cell in reachedMap
+    // Find the target cell in cameFrom
     let lastCellKey = createKey(end.y, end.x);
 
     // Get the end cell
-    let lastCell = reachedMap.get(lastCellKey);
+    let lastCell = cameFrom.get(lastCellKey);
     
     path.push(lastCell);
     if (lastCell != null)
@@ -106,7 +120,7 @@ function tracePath()
                 lastCell.x != "None")
         {
             lastCellKey = createKey(lastCell.y, lastCell.x);
-            lastCell = reachedMap.get(lastCellKey);
+            lastCell = cameFrom.get(lastCellKey);
 
             path.push(lastCell);    
         }
@@ -117,17 +131,23 @@ function tracePath()
 
 function search(endAtCount)
 {
-    perimeter.push(start);
-    reachedMap.set(createKey(start.y, start.x), {y: "None", x: "None"});
+    // Start the perimeter queue by adding the starting position and it's cost, 0
+    perimeterPQueue = newNode({y: start.y, x: start.x}, 0);
+
+    let startKey = createKey(start.y, start.x);
+
+    cameFrom.set(startKey, {y: "None", x: "None"});
+    costMap.set(startKey, 0);
 
     let foundGoal = false;
 
     let count = 0;
-    while(perimeter.length > 0 && !foundGoal)
-    //while(count < endAtCount)
+
+    //while(perimeter.length > 0 && !foundGoal)
+    while(count < endAtCount)
     {
         // Remove the current perimeter node
-        let current = perimeter.shift();
+        let current = start;
         
         foundGoal = checkNeighbours(current);
         count++;
@@ -144,35 +164,37 @@ function checkNeighbours(cell)
     let endCheckX   = posX + 1 >= posArray[0].length ? posX : posX + 1;
     let startCheckY = posY - 1 < 0 ? posY : posY - 1;
     let endCheckY   = posY + 1 >= posArray.length ? posY : posY + 1;
-    
+
+    let newPosition;
+    let newCost;
+
     for (let y = startCheckY; y <= endCheckY; y++) {
         
+        
+        // if the neighbour currently being considered isn't the original cell, or a cell with an obstacle
         if (y != cell.y && !cellHasObstacle(y, posX)) {
             
-            let newPosition = newPos(y, posX);
-            if (neighbourNotInReached(newPosition)) {              
-                perimeter.push(newPosition);
-                reachedMap.set(createKey(newPosition.y, newPosition.x), {y: posY, x: posX});
-                reached.push({y: y, x: posX});
+            newPosition = newPos(y, posX);
+            newCost = calculateMovementCost(posY, posX, y, posX);
+            let currentCost = getCurrentCost();
+            
+            if (!cameFromNeighbour || newCost < currentCost)
+            {
+                costMap.set()
             }
 
             if (newPosition.y == end.y && newPosition.x == end.x) {
                 return true;
             }
         }
-
     }
 
     for (let x = startCheckX; x <= endCheckX; x++) {
 
         if (x != cell.x && !cellHasObstacle(posY, x)) {
             
-            let newPosition = newPos(posY, x);
-            if (neighbourNotInReached(newPosition)) {                
-                perimeter.push(newPosition);
-                reachedMap.set(createKey(newPosition.y, newPosition.x), {y: posY, x: posX});
-                reached.push({y: posY, x: x});
-            }
+            newPosition = newPos(posY, x);
+            newCost = posArray[posY][x].cost;
 
             if (newPosition.y == end.y && newPosition.x == end.x)
             {
@@ -190,10 +212,25 @@ function newPos(newY, newX)
     return {y: newY, x: newX};
 }
 
-function neighbourNotInReached(pos)
+function getCurrentCost(y, x)
+{
+    let key = createKey(y, x);
+    
+    if (costMap.has(key))
+        return costMap.get(key);
+    else
+        return -1;
+}
+
+function calculateMovementCost(parentY, parentX, neighbourY, neighbourX)
+{
+    return posArray[parentY][parentX].cost + posArray[neighbourY][neighbourX].cost;
+}
+
+function cameFromNeighbour(pos)
 {
     let key = createKey(pos.y, pos.x);
-    return !reachedMap.has(key);
+    return cameFrom.has(key);
 }
 
 function cellHasObstacle(y, x)
@@ -210,8 +247,8 @@ function removePosition(y, x)
 {
     const key = createKey(y, x);
     
-    if (reachedMap.has(key)) {
-        reachedMap.delete(key);
+    if (cameFrom.has(key)) {
+        cameFrom.delete(key);
     }
 }
 
@@ -295,7 +332,7 @@ function fillCellsFromArray(cellArray, hexColor)
 
 function fillCell(x, y, hexColor)
 {
-    let posVal = calculateMovementCost(y, x);
+    let posVal = calculateMovementCostFromStart(y, x);
 
     // Fill the cell
     fill(hexColor);
@@ -307,7 +344,7 @@ function fillCell(x, y, hexColor)
     text("" + posVal + "", (cellSize * x) + cellSize / 2, (cellSize * y) + cellSize / 2);
 }
 
-function calculateMovementCost(y, x)
+function calculateMovementCostFromStart(y, x)
 {
     if (y == "None" && x == "None")
     {
@@ -340,8 +377,8 @@ function buildArray(rows, columns)
 { 
     posArray = new Array(rows);
     for(let row = 0; row < rows; row++) {
+
         posArray[row] = new Array(columns);
-        
         for(let cell = 0; cell < columns; cell++) {
             // NOTE: This is where we assign movement cost
 
@@ -350,7 +387,7 @@ function buildArray(rows, columns)
                 posArray[row][cell] = {type: "empty", cost: Math.round(Math.random() * 5)};
             } else 
             {
-                posArray[row][cell] = {type: "empty", cost: 0};
+                posArray[row][cell] = {type: "empty", cost: 1};
             }
         }
     }

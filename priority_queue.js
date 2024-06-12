@@ -20,17 +20,17 @@ class Node {
     // Lower values indicate
     // higher priority
     constructor() {
-        this.data = 0;
+        this.data = {y: 0, x: 0};
         this.priority = 0;
         this.next = null;
     }
 }
  
-var node = new Node();
+let node = new Node();
  
 // Function to Create A New Node
 function newNode(d, p) {
-    var temp = new Node();
+    let temp = new Node();
     temp.data = d;
     temp.priority = p;
     temp.next = null;
@@ -39,24 +39,24 @@ function newNode(d, p) {
 }
  
 // Return the value at head
-function peek(head) {
+function pqPeek(head) {
     return head.data;
 }
  
 // Removes the element with the
 // highest priority from the list
-function pop(head) {
-    var temp = head;
+function pqPop(head) {
+    let temp = head;
     head = head.next;
     return head;
 }
  
 // Function to push according to priority
-function push(head, d, p) {
-    var start = head;
+function pqPush(head, d, p) {
+    let start = head;
  
     // Create new Node
-    var temp = newNode(d, p);
+    let temp = newNode(d, p);
  
     // Special Case: The head of list
     // has lesser priority than new node.
@@ -85,19 +85,19 @@ function push(head, d, p) {
 }
  
 // Function to check is list is empty
-function isEmpty(head) {
+function pqIsEmpty(head) {
     return head == null ? 1 : 0;
 }
  
 // Driver code
 // Create a Priority Queue
 // 7.4.5.6
-// var pq = newNode(4, 1);
-// pq = push(pq, 5, 2);
-// pq = push(pq, 6, 3);
-// pq = push(pq, 7, 0);
+// let pq = newNode(4, 1);
+// pq = pqPush(pq, 5, 2);
+// pq = pqPush(pq, 6, 3);
+// pq = pqPush(pq, 7, 0);
  
 // while (isEmpty(pq) == 0) {
 //     console.log(peek(pq)," ");
-//     pq = pop(pq);
+//     pq = pqPop(pq);
 // }
