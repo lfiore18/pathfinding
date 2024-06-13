@@ -50,17 +50,12 @@ class PriorityQueue {
     }
 }
 
-// Example usage
-const pq = new PriorityQueue();
+// // Example usage
+// const pq = new PriorityQueue();
 
-// Adding elements with priorities (costs)
-pq.enqueue({ y: 2, x: 3 }, 1);
-pq.enqueue({ y: 11, x: 2 }, 1);
-pq.enqueue({ y: 5, x: 6 }, 2);
+// // Adding elements with priorities (costs)
+// pq.enqueue({ y: 2, x: 3 }, 1);
+// pq.enqueue({ y: 11, x: 2 }, 1);
+// pq.enqueue({ y: 5, x: 6 }, 2);
 
-console.log(pq.front());
-
-// Getting and removing the element with the highest priority (lowest cost)
-console.log(pq.dequeue()); // { y: 11, x: 2 }
-console.log(pq.dequeue()); // { y: 2, x: 3 }
-console.log(pq.dequeue()); // { y: 5, x: 6 }
+// console.log(pq.front());
