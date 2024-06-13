@@ -45,21 +45,20 @@ function setup() {
     
 
     posArray[start.y][start.x] = {type: "start", cost: 0};
-    posArray[end.y][end.x] = {type: "start", cost: 0};
+    posArray[end.y][end.x] = {type: "end", cost: 0};
 }
 
 function draw() {
     
+    perimeterPQueue = new PriorityQueue();
+
     // Draw the grid and any obstacles
     drawGrid();
     drawOccupiedCells();
 
-    search(4);
+    search(200);
     
     let path = tracePath();
-    console.log(path);
-
-    PriorityQueueTest(2, 3);
 
     // Draw reached nodes in tan orange
     fillCellsFromArray(reached, "#A37D2C");
@@ -74,31 +73,12 @@ function draw() {
     fillCell(start.x, start.y, "#008000");
     fillCell(end.x, end.y, "#FF0000");
 
-    
-
     // Empty the arrays
     cameFrom = new Map();
-    perimeter = [];
+    costMap = new Map();
+    perimeterPQueue = new PriorityQueue();
     reached = [];
     path = [];
-}
-
-function PriorityQueueTest(y, x)
-{
-    costMap.set(createKey(y, x), 2);
-    // var pq = newNode(4, 1);
-    // pq = push(pq, 5, 2);
-    // pq = push(pq, 6, 3);
-    // pq = push(pq, 7, 0);
-
-    let priorityQueue = newNode({y: y, x: x}, 2);
-    
-    priorityQueue = pqPush(priorityQueue, {y: 3, x: 4}, 0);
-    
-    priorityQueue = pqPush(priorityQueue, {y: 3, x: 8}, 1);
-    priorityQueue = pqPush(priorityQueue, {y: 3, x: 1}, 0);
-
-    console.log(priorityQueue);
 }
 
 
@@ -128,29 +108,24 @@ function tracePath()
 
     return path;
 }
+function search() {
+    // Clear the priority queue before starting the search
+    perimeterPQueue.clear();
 
-function search(endAtCount)
-{
-    // Start the perimeter queue by adding the starting position and it's cost, 0
-    perimeterPQueue = newNode({y: start.y, x: start.x}, 0);
+    // Start the perimeter queue by adding the starting position and its cost, 0
+    perimeterPQueue.enqueue({ y: start.y, x: start.x }, 0);
 
     let startKey = createKey(start.y, start.x);
 
-    cameFrom.set(startKey, {y: "None", x: "None"});
-    costMap.set(startKey, 0);
+    cameFrom.set(startKey, { y: "None", x: "None" });
+    setCost(startKey, 0);
 
     let foundGoal = false;
 
-    let count = 0;
-
-    //while(perimeter.length > 0 && !foundGoal)
-    while(count < endAtCount)
-    {
-        // Remove the current perimeter node
-        let current = start;
-        
+    while (!perimeterPQueue.isEmpty() && !foundGoal) {
+        let current = perimeterPQueue.front();
         foundGoal = checkNeighbours(current);
-        count++;
+        perimeterPQueue.dequeue();
     }
 }
 
@@ -165,25 +140,27 @@ function checkNeighbours(cell)
     let startCheckY = posY - 1 < 0 ? posY : posY - 1;
     let endCheckY   = posY + 1 >= posArray.length ? posY : posY + 1;
 
-    let newPosition;
+
     let newCost;
 
     for (let y = startCheckY; y <= endCheckY; y++) {
         
-        
         // if the neighbour currently being considered isn't the original cell, or a cell with an obstacle
         if (y != cell.y && !cellHasObstacle(y, posX)) {
             
-            newPosition = newPos(y, posX);
+            let newPosKey = createKey(y, posX);
             newCost = calculateMovementCost(posY, posX, y, posX);
-            let currentCost = getCurrentCost();
+            let currentCost = getCurrentCost(newPosKey);
             
-            if (!cameFromNeighbour || newCost < currentCost)
+            if (newCost < currentCost || !hasCost(newPosKey))
             {
-                costMap.set()
+                setCost(newPosKey, newCost);
+                cameFrom.set(newPosKey, {y: posY, x: posX});
+                perimeterPQueue.enqueue({y: y, x: posX}, newCost);
+                reached.push({y: y, x: posX});
             }
 
-            if (newPosition.y == end.y && newPosition.x == end.x) {
+            if (y == end.y && posX == end.x) {
                 return true;
             }
         }
@@ -193,11 +170,19 @@ function checkNeighbours(cell)
 
         if (x != cell.x && !cellHasObstacle(posY, x)) {
             
-            newPosition = newPos(posY, x);
-            newCost = posArray[posY][x].cost;
-
-            if (newPosition.y == end.y && newPosition.x == end.x)
+            let newPosKey = createKey(posY, x);
+            newCost = calculateMovementCost(posY, posX, posY, x);
+            let currentCost = getCurrentCost(newPosKey);
+            
+            if (newCost < currentCost || !hasCost(newPosKey))
             {
+                setCost(newPosKey, newCost);
+                cameFrom.set(newPosKey, {y: posY, x: posX});
+                perimeterPQueue.enqueue({y: posY, x: posX}, newCost);
+                reached.push({y: posY, x: x});
+            }
+
+            if (posY == end.y && x == end.x) {
                 return true;
             }
         }
@@ -212,10 +197,18 @@ function newPos(newY, newX)
     return {y: newY, x: newX};
 }
 
-function getCurrentCost(y, x)
+function setCost(key, cost)
 {
-    let key = createKey(y, x);
-    
+    costMap.set(key, cost);
+}
+
+function hasCost(key)
+{
+    return costMap.has(key);
+}
+
+function getCurrentCost(key)
+{
     if (costMap.has(key))
         return costMap.get(key);
     else
@@ -225,6 +218,25 @@ function getCurrentCost(y, x)
 function calculateMovementCost(parentY, parentX, neighbourY, neighbourX)
 {
     return posArray[parentY][parentX].cost + posArray[neighbourY][neighbourX].cost;
+}
+
+function calculateMovementCostFromStart(y, x)
+{
+    if (y == "None" && x == "None")
+    {
+        return 0;
+    }
+
+    let posVal = Math.abs(start.x - x) + Math.abs(start.y - y);
+    
+    if (posArray[y][x].cost != "n/a")
+    {
+        posVal += posArray[y][x].cost;
+    } else {
+        posVal = "n/a";
+    }
+
+    return posVal;
 }
 
 function cameFromNeighbour(pos)
@@ -342,25 +354,6 @@ function fillCell(x, y, hexColor)
     fill("white");
     textAlign(CENTER, CENTER); // Center the text
     text("" + posVal + "", (cellSize * x) + cellSize / 2, (cellSize * y) + cellSize / 2);
-}
-
-function calculateMovementCostFromStart(y, x)
-{
-    if (y == "None" && x == "None")
-    {
-        return 0;
-    }
-
-    let posVal = Math.abs(start.x - x) + Math.abs(start.y - y);
-    
-    if (posArray[y][x].cost != "n/a")
-    {
-        posVal += posArray[y][x].cost;
-    } else {
-        posVal = "n/a";
-    }
-
-    return posVal;
 }
 
 function drawTextOverlay(str, hexColor, textSize)
